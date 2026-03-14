@@ -14,7 +14,8 @@ jobs:
     timeout-minutes: 90
     env:
       BUZZ_DISABLE_TELEMETRY: true
-    outputs:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
       snap: ${{ steps.snapcraft.outputs.snap }}
     steps:
       # Ideas from https://github.com/orgs/community/discussions/25678

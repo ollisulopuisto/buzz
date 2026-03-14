@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 90
     env:
       BUZZ_DISABLE_TELEMETRY: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       fail-fast: false
       matrix:
