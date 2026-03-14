@@ -34,8 +34,25 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install Vulkan SDK
+        if: matrix.os == 'windows-latest'
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
+
       - name: Install uv
         uses: astral-sh/setup-uv@v6
+
+      - name: Install Inno Setup on Windows
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install innosetup --yes
+        if: matrix.os == 'windows-latest'
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        if: matrix.os == 'windows-latest'
 
       - name: Install dependencies
         run: uv sync
@@ -43,7 +60,7 @@ jobs:
       - uses: AnimMouse/setup-ffmpeg@v1
         id: setup-ffmpeg
         with:
-          version: ${{ matrix.os == 'macos-latest' && '80' || '8.0' }}
+          version: ${{ matrix.os == 'macos-latest' && '71' || '7.1' }}
 
       - name: Bundle
         run: |
