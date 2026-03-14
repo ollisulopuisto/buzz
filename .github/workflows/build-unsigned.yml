@@ -42,7 +42,7 @@ jobs:
       - uses: AnimMouse/setup-ffmpeg@v1
         id: setup-ffmpeg
         with:
-          version: '7.1'
+          version: ${{ matrix.os == 'macos-latest' && '80' || '8.0' }}
 
       - name: Bundle
         run: |
