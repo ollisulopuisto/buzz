@@ -108,6 +108,8 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build:
+    needs: [test]
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
@@ -226,24 +228,29 @@ jobs:
 
             brew install create-dmg
 
-            sudo pkill -9 XProtect >/dev/null || true;
-            while pgrep XProtect; do sleep 3; done;
+            if [ -z "$BUILD_CERTIFICATE_BASE64" ]; then
+              echo "No signing certificate found, building unsigned DMG..."
+              uv run make bundle_mac_unsigned
+            else
+              sudo pkill -9 XProtect >/dev/null || true;
+              while pgrep XProtect; do sleep 3; done;
 
-            CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-            KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+              CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+              KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-            echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+              echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
 
-            security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-            security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-            security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+              security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+              security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+              security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-            security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-            security list-keychain -d user -s $KEYCHAIN_PATH
+              security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+              security list-keychain -d user -s $KEYCHAIN_PATH
 
-            xcrun notarytool store-credentials --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" notarytool --validate
+              xcrun notarytool store-credentials --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" notarytool --validate
 
-            uv run make bundle_mac
+              uv run make bundle_mac
+            fi
 
           elif [ "$RUNNER_OS" == "Windows" ]; then
 
@@ -271,6 +278,8 @@ jobs:
             dist/Buzz*-mac.dmg
 
   build_wheels:
+    needs: [test]
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     env:
       BUZZ_DISABLE_TELEMETRY: true
