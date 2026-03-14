@@ -38,7 +38,8 @@ def db():
             word_level_timings BOOLEAN DEFAULT FALSE,
             extract_speech BOOLEAN DEFAULT FALSE,
             name TEXT,
-            notes TEXT
+            notes TEXT,
+            logs TEXT
         )
     """)
     
