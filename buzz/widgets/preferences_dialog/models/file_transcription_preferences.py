@@ -20,6 +20,7 @@ class FileTranscriptionPreferences:
     word_level_timings: bool
     extract_speech: bool
     initial_prompt: str
+    advanced_options: str
     enable_llm_translation: bool
     llm_prompt: str
     llm_model: str
@@ -32,6 +33,7 @@ class FileTranscriptionPreferences:
         settings.setValue("word_level_timings", self.word_level_timings)
         settings.setValue("extract_speech", self.extract_speech)
         settings.setValue("initial_prompt", self.initial_prompt)
+        settings.setValue("advanced_options", self.advanced_options)
         settings.setValue("enable_llm_translation", self.enable_llm_translation)
         settings.setValue("llm_model", self.llm_model)
         settings.setValue("llm_prompt", self.llm_prompt)
@@ -57,6 +59,7 @@ class FileTranscriptionPreferences:
             else bool(extract_speech_value)
 
         initial_prompt = settings.value("initial_prompt", "")
+        advanced_options = settings.value("advanced_options", "")
         enable_llm_translation_value = settings.value("enable_llm_translation", False)
         enable_llm_translation = False if enable_llm_translation_value == "false" \
             else bool(enable_llm_translation_value)
@@ -72,6 +75,7 @@ class FileTranscriptionPreferences:
             word_level_timings=word_level_timings,
             extract_speech=extract_speech,
             initial_prompt=initial_prompt,
+            advanced_options=advanced_options,
             enable_llm_translation=enable_llm_translation,
             llm_model=llm_model,
             llm_prompt=llm_prompt,
@@ -90,6 +94,7 @@ class FileTranscriptionPreferences:
             task=transcription_options.task,
             language=transcription_options.language,
             initial_prompt=transcription_options.initial_prompt,
+            advanced_options=transcription_options.advanced_options,
             enable_llm_translation=transcription_options.enable_llm_translation,
             llm_model=transcription_options.llm_model,
             llm_prompt=transcription_options.llm_prompt,
@@ -110,6 +115,7 @@ class FileTranscriptionPreferences:
                 task=self.task,
                 language=self.language,
                 initial_prompt=self.initial_prompt,
+                advanced_options=self.advanced_options,
                 enable_llm_translation=self.enable_llm_translation,
                 llm_model=self.llm_model,
                 llm_prompt=self.llm_prompt,

@@ -52,6 +52,7 @@ class Column(enum.Enum):
     EXTRACT_SPEECH = 18
     NAME = 19
     NOTES = 20
+    LOGS = 21
 
 
 @dataclass
@@ -310,6 +311,9 @@ class TranscriptionTasksTableWidget(QTableView):
             
             notes_action = menu.addAction(_("Add/Edit Notes"))
             notes_action.triggered.connect(self.on_notes_action)
+            
+            log_action = menu.addAction(_("View Log"))
+            log_action.triggered.connect(self.on_view_log_action)
         
         menu.exec(event.globalPos())
 
@@ -673,6 +677,24 @@ class TranscriptionTasksTableWidget(QTableView):
                 new_notes
             )
             self.refresh_all()
+
+    def on_view_log_action(self):
+        selected_rows = self.selectionModel().selectedRows()
+        if not selected_rows:
+            return
+        
+        transcription = self.transcription(selected_rows[0])
+        
+        # We need to get the latest logs from the database
+        # self.transcription() might have stale data if logs were updated after select()
+        query = self.model().database().exec(f"SELECT logs FROM transcription WHERE id = '{transcription.id}'")
+        logs = ""
+        if query.next():
+            logs = query.value(0) or ""
+
+        from buzz.widgets.transcription_log_dialog import TranscriptionLogDialog
+        dialog = TranscriptionLogDialog(logs=logs, parent=self)
+        dialog.exec()
 
     def on_restart_transcription_action(self):
         """Restart transcription for failed or canceled tasks"""

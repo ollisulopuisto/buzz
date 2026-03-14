@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QWidget
 
 from buzz.action import Action
 from buzz.locale import _
+from buzz.settings.settings import Settings
 from buzz.settings.shortcut import Shortcut
 from buzz.settings.shortcuts import Shortcuts
 from buzz.widgets.icon import Icon
@@ -35,6 +36,7 @@ class MainWindowToolbar(ToolBar):
         super().__init__(parent)
 
         self.shortcuts = shortcuts
+        self.settings = Settings()
 
         self.record_action = Action(Icon(RECORD_ICON_PATH, self), _("Record"), self)
         self.record_action.triggered.connect(self.on_record_action_triggered)
@@ -100,7 +102,15 @@ class MainWindowToolbar(ToolBar):
         self.addAction(self.update_action)
 
         self.setMovable(False)
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        
+        show_labels = self.settings.value(Settings.Key.MAIN_WINDOW_TOOLBAR_SHOW_TEXT_LABELS, False)
+        self.set_show_text_labels(show_labels)
+
+    def set_show_text_labels(self, show: bool):
+        self.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextUnderIcon if show 
+            else Qt.ToolButtonStyle.ToolButtonIconOnly
+        )
 
     def reset_shortcuts(self):
         self.record_action.setShortcut(

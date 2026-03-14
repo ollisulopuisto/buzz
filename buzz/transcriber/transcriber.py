@@ -147,6 +147,7 @@ class TranscriptionOptions:
     extract_speech: bool = False
     temperature: Tuple[float, ...] = DEFAULT_WHISPER_TEMPERATURE
     initial_prompt: str = ""
+    advanced_options: str = ""
     openai_access_token: str = field(
         default="", metadata=config(exclude=Exclude.ALWAYS)
     )

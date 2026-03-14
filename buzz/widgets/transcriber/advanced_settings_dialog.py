@@ -62,6 +62,20 @@ class AdvancedSettingsDialog(QDialog):
 
         layout.addRow(_("Initial Prompt:"), self.initial_prompt_text_edit)
 
+        self.advanced_options_line_edit = LineEdit(
+            transcription_options.advanced_options, self
+        )
+        self.advanced_options_line_edit.textChanged.connect(
+            self.on_advanced_options_changed
+        )
+        self.advanced_options_line_edit.setPlaceholderText(
+            _("e.g. --offset_t 0 --duration 10000 --beam_size 5")
+        )
+        self.advanced_options_line_edit.setToolTip(
+            _("Additional command-line arguments for the transcription binary.")
+        )
+        layout.addRow(_("Advanced Options:"), self.advanced_options_line_edit)
+
         translation_settings_title= _("Translation settings")
         translation_settings_title_label = QLabel(f"<h4>{translation_settings_title}</h4>", self)
         layout.addRow("", translation_settings_title_label)
@@ -240,6 +254,10 @@ class AdvancedSettingsDialog(QDialog):
         self.transcription_options.initial_prompt = (
             self.initial_prompt_text_edit.toPlainText()
         )
+        self.transcription_options_changed.emit(self.transcription_options)
+
+    def on_advanced_options_changed(self, text: str):
+        self.transcription_options.advanced_options = text
         self.transcription_options_changed.emit(self.transcription_options)
 
     def on_enable_llm_translation_changed(self, state):

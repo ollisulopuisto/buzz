@@ -36,7 +36,8 @@ class TranscriptionDAO(DAO[Transcription]):
                 word_level_timings,
                 extract_speech,
                 name,
-                notes
+                notes,
+                logs
             ) VALUES (
                 :id,
                 :export_formats,
@@ -54,7 +55,8 @@ class TranscriptionDAO(DAO[Transcription]):
                 :word_level_timings,
                 :extract_speech,
                 :name,
-                :notes
+                :notes,
+                :logs
             )
             """
         )
@@ -101,6 +103,7 @@ class TranscriptionDAO(DAO[Transcription]):
         )
         query.bindValue(":name", None)  # name is not available in FileTranscriptionTask
         query.bindValue(":notes", None)  # notes is not available in FileTranscriptionTask
+        query.bindValue(":logs", "")
         if not query.exec():
             raise Exception(query.lastError().text())
 
@@ -140,7 +143,8 @@ class TranscriptionDAO(DAO[Transcription]):
                 word_level_timings,
                 extract_speech,
                 name,
-                notes
+                notes,
+                logs
             ) VALUES (
                 :id,
                 :export_formats,
@@ -158,7 +162,8 @@ class TranscriptionDAO(DAO[Transcription]):
                 :word_level_timings,
                 :extract_speech,
                 :name,
-                :notes
+                :notes,
+                :logs
             )
             """
         )
@@ -300,13 +305,28 @@ class TranscriptionDAO(DAO[Transcription]):
         if query.numRowsAffected() == 0:
             raise Exception("Transcription not found")
 
+    def update_transcription_logs(self, id: UUID, log: str):
+        query = self._create_query()
+        query.prepare(
+            """
+            UPDATE transcription
+            SET logs = logs || :log
+            WHERE id = :id
+        """
+        )
+
+        query.bindValue(":id", str(id))
+        query.bindValue(":log", log + "\n")
+        if not query.exec():
+            raise Exception(query.lastError().text())
+
     def reset_transcription_for_restart(self, id: UUID):
         """Reset a transcription to queued status for restart"""
         query = self._create_query()
         query.prepare(
             """
             UPDATE transcription
-            SET status = :status, progress = :progress, time_started = NULL, time_ended = NULL, error_message = NULL
+            SET status = :status, progress = :progress, time_started = NULL, time_ended = NULL, error_message = NULL, logs = ''
             WHERE id = :id
         """
         )

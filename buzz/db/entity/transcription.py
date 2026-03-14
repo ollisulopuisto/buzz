@@ -32,6 +32,7 @@ class Transcription(Entity):
     url: str | None = None
     name: str | None = None
     notes: str | None = None
+    logs: str | None = None
 
     @property
     def id_as_uuid(self):

@@ -46,6 +46,7 @@ class Settings:
         FILE_TRANSCRIBER_LLM_PROMPT = "file-transcriber/llm-prompt"
         FILE_TRANSCRIBER_WORD_LEVEL_TIMINGS = "file-transcriber/word-level-timings"
         FILE_TRANSCRIBER_EXPORT_FORMATS = "file-transcriber/export-formats"
+        FILE_TRANSCRIBER_ADVANCED_OPTIONS = "file-transcriber/advanced-options"
 
         DEFAULT_EXPORT_FILE_NAME = "transcriber/default-export-file-name"
         CUSTOM_OPENAI_BASE_URL = "transcriber/custom-openai-base-url"
@@ -75,6 +76,7 @@ class Settings:
         )
 
         MAIN_WINDOW = "main-window"
+        MAIN_WINDOW_TOOLBAR_SHOW_TEXT_LABELS = "main-window/toolbar/show-text-labels"
         TRANSCRIPTION_VIEWER = "transcription-viewer"
 
         AUDIO_PLAYBACK_RATE = "audio/playback-rate"

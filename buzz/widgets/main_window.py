@@ -11,12 +11,14 @@ from PyQt6.QtCore import (
     pyqtSignal
 )
 
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
     QMessageBox,
     QFileDialog,
+    QSystemTrayIcon,
+    QMenu,
 )
 
 from buzz.db.entity.transcription import Transcription
@@ -115,7 +117,10 @@ class MainWindow(QMainWindow):
             self.on_openai_access_token_changed
         )
         self.menu_bar.preferences_changed.connect(self.on_preferences_changed)
+        self.menu_bar.toggle_toolbar_labels_triggered.connect(self.on_toggle_toolbar_labels)
         self.setMenuBar(self.menu_bar)
+
+        self._init_system_tray()
 
         self.table_widget = TranscriptionTasksTableWidget(self)
         self.table_widget.transcription_service = self.transcription_service
@@ -139,6 +144,7 @@ class MainWindow(QMainWindow):
 
         self.transcriber_worker.task_started.connect(self.on_task_started)
         self.transcriber_worker.task_progress.connect(self.on_task_progress)
+        self.transcriber_worker.task_log.connect(self.on_task_log)
         self.transcriber_worker.task_download_progress.connect(
             self.on_task_download_progress
         )
@@ -170,6 +176,53 @@ class MainWindow(QMainWindow):
         self.save_preferences(preferences)
         self.folder_watcher.set_preferences(preferences.folder_watch)
         self.folder_watcher.find_tasks()
+
+    def on_toggle_toolbar_labels(self, show: bool):
+        self.settings.set_value(Settings.Key.MAIN_WINDOW_TOOLBAR_SHOW_TEXT_LABELS, show)
+        self.toolbar.set_show_text_labels(show)
+
+    def _init_system_tray(self):
+        self.tray_icon = QSystemTrayIcon(QIcon(BUZZ_ICON_PATH), self)
+        
+        tray_menu = QMenu()
+        
+        show_action = QAction(_("Show Buzz"), self)
+        show_action.triggered.connect(self.show)
+        tray_menu.addAction(show_action)
+        
+        tray_menu.addSeparator()
+        
+        record_action = QAction(_("Record..."), self)
+        record_action.triggered.connect(self.toolbar.on_record_action_triggered)
+        tray_menu.addAction(record_action)
+        
+        import_action = QAction(_("Import File..."), self)
+        import_action.triggered.connect(self.on_new_transcription_action_triggered)
+        tray_menu.addAction(import_action)
+        
+        tray_menu.addSeparator()
+        
+        preferences_action = QAction(_("Settings..."), self)
+        preferences_action.triggered.connect(self.menu_bar.on_preferences_action_triggered)
+        tray_menu.addAction(preferences_action)
+        
+        quit_action = QAction(_("Quit"), self)
+        quit_action.triggered.connect(QApplication.instance().quit)
+        tray_menu.addAction(quit_action)
+        
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+        
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if self.isVisible():
+                self.hide()
+            else:
+                self.show()
+                self.raise_()
+                self.activateWindow()
 
     def save_preferences(self, preferences: Preferences):
         self.settings.settings.beginGroup("preferences")
@@ -402,6 +455,10 @@ class MainWindow(QMainWindow):
 
     def on_task_progress(self, task: FileTranscriptionTask, progress: float):
         self.transcription_service.update_transcription_progress(task.uid, progress)
+        self.table_widget.refresh_row(task.uid)
+
+    def on_task_log(self, task: FileTranscriptionTask, log: str):
+        self.transcription_service.update_transcription_logs(task.uid, log)
         self.table_widget.refresh_row(task.uid)
 
     def on_task_download_progress(

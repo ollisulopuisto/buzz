@@ -19,7 +19,8 @@ CREATE TABLE transcription (
     word_level_timings BOOLEAN DEFAULT FALSE,
     extract_speech BOOLEAN DEFAULT FALSE,
     name TEXT,
-    notes TEXT
+    notes TEXT,
+    logs TEXT
 );
 
 CREATE TABLE transcription_segment (

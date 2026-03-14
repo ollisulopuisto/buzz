@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QDialogButtonBox,
@@ -44,39 +45,37 @@ class AboutDialog(QDialog):
         self.network_access_manager = network_access_manager
         self.network_access_manager.finished.connect(self.on_latest_release_reply)
 
-        layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
+        content_layout = QHBoxLayout()
 
         image_label = QLabel()
         pixmap = QPixmap(BUZZ_LARGE_ICON_PATH).scaled(
-            80,
-            80,
+            128,
+            128,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
         image_label.setPixmap(pixmap)
         image_label.setAlignment(
-            Qt.AlignmentFlag(
-                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter
-            )
+            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
         )
+
+        details_layout = QVBoxLayout()
 
         buzz_label = QLabel(APP_NAME)
         buzz_label.setAlignment(
-            Qt.AlignmentFlag(
-                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter
-            )
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
         )
         buzz_label_font = QtGui.QFont()
         buzz_label_font.setBold(True)
-        buzz_label_font.setPointSize(20)
+        buzz_label_font.setPointSize(24)
         buzz_label.setFont(buzz_label_font)
 
         version_label = QLabel(f"{_('Version')} {VERSION}")
         version_label.setAlignment(
-            Qt.AlignmentFlag(
-                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter
-            )
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
         )
+        version_label.setStyleSheet("color: gray;")
 
         self.check_updates_button = QPushButton(_("Check for updates"), self)
         self.check_updates_button.clicked.connect(self.on_click_check_for_updates)
@@ -84,21 +83,29 @@ class AboutDialog(QDialog):
         self.show_logs_button = QPushButton(_("Show logs"), self)
         self.show_logs_button.clicked.connect(self.on_click_show_logs)
 
+        details_layout.addWidget(buzz_label)
+        details_layout.addWidget(version_label)
+        details_layout.addSpacing(10)
+        details_layout.addWidget(self.check_updates_button)
+        details_layout.addWidget(self.show_logs_button)
+        details_layout.addStretch()
+
+        content_layout.addWidget(image_label)
+        content_layout.addSpacing(20)
+        content_layout.addLayout(details_layout)
+
         button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton(QDialogButtonBox.StandardButton.Close), self
         )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
 
-        layout.addWidget(image_label)
-        layout.addWidget(buzz_label)
-        layout.addWidget(version_label)
-        layout.addWidget(self.check_updates_button)
-        layout.addWidget(self.show_logs_button)
-        layout.addWidget(button_box)
+        main_layout.addLayout(content_layout)
+        main_layout.addWidget(button_box)
 
-        self.setLayout(layout)
-        self.setMinimumWidth(350)
+        self.setLayout(main_layout)
+        self.setMinimumWidth(450)
+        self.setMinimumHeight(250)
 
     def on_click_check_for_updates(self):
         url = QUrl(self.GITHUB_API_LATEST_RELEASE_URL)

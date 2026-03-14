@@ -28,6 +28,7 @@ class FileTranscriber(QObject):
     transcription_task: FileTranscriptionTask
     progress = pyqtSignal(tuple)  # (current, total)
     download_progress = pyqtSignal(float)
+    log = pyqtSignal(str)
     completed = pyqtSignal(list)  # List[Segment]
     error = pyqtSignal(str)
 

@@ -7,7 +7,7 @@ from PyQt6.QtGui import QAction, QKeySequence
 from PyQt6.QtWidgets import QMenuBar, QWidget
 
 from buzz.locale import _
-from buzz.settings.settings import APP_NAME
+from buzz.settings.settings import APP_NAME, Settings
 from buzz.settings.shortcut import Shortcut
 from buzz.settings.shortcuts import Shortcuts
 from buzz.widgets.about_dialog import AboutDialog
@@ -21,6 +21,7 @@ class MenuBar(QMenuBar):
     import_action_triggered = pyqtSignal()
     import_url_action_triggered = pyqtSignal()
     import_folder_action_triggered = pyqtSignal()
+    toggle_toolbar_labels_triggered = pyqtSignal(bool)
     shortcuts_changed = pyqtSignal()
     openai_api_key_changed = pyqtSignal(str)
     preferences_changed = pyqtSignal(Preferences)
@@ -36,6 +37,7 @@ class MenuBar(QMenuBar):
 
         self.shortcuts = shortcuts
         self.preferences = preferences
+        self.settings = Settings()
 
         self.import_action = QAction(_("Import File..."), self)
         self.import_action.triggered.connect(self.import_action_triggered)
@@ -51,9 +53,20 @@ class MenuBar(QMenuBar):
         about_action.triggered.connect(self.on_about_action_triggered)
         about_action.setMenuRole(QAction.MenuRole.AboutRole)
 
-        self.preferences_action = QAction(_("Preferences..."), self)
+        # On macOS 13+, "Preferences" is renamed to "Settings"
+        mac_version = platform.mac_ver()[0]
+        is_macos_13_plus = platform.system() == "Darwin" and int(mac_version.split('.')[0]) >= 13
+        preferences_label = _("Settings...") if is_macos_13_plus else _("Preferences...")
+
+        self.preferences_action = QAction(preferences_label, self)
         self.preferences_action.triggered.connect(self.on_preferences_action_triggered)
         self.preferences_action.setMenuRole(QAction.MenuRole.PreferencesRole)
+
+        self.toggle_toolbar_labels_action = QAction(_("Show Toolbar Labels"), self)
+        self.toggle_toolbar_labels_action.setCheckable(True)
+        show_labels = self.settings.value(Settings.Key.MAIN_WINDOW_TOOLBAR_SHOW_TEXT_LABELS, False)
+        self.toggle_toolbar_labels_action.setChecked(show_labels)
+        self.toggle_toolbar_labels_action.triggered.connect(self.toggle_toolbar_labels_triggered)
 
         help_label = _("Help")
         help_action = QAction(f'{help_label}', self)
@@ -65,6 +78,9 @@ class MenuBar(QMenuBar):
         file_menu.addAction(self.import_action)
         file_menu.addAction(self.import_url_action)
         file_menu.addAction(self.import_folder_action)
+
+        view_menu = self.addMenu(_("View"))
+        view_menu.addAction(self.toggle_toolbar_labels_action)
 
         help_menu_title = _("Help") + ("\u200B" if platform.system() == "Darwin" else "")
         help_menu = self.addMenu(help_menu_title)

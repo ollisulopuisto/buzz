@@ -447,6 +447,7 @@ class WhisperFileTranscriber(FileTranscriber):
             elif line.startswith("error = "):
                 self.error_message = line[8:]
             else:
+                self.log.emit(line)
                 try:
                     match = PROGRESS_REGEX.search(line)
                     if match is not None:

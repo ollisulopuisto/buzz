@@ -71,6 +71,7 @@ class FileTranscriberQueueWorker(QObject):
 
     task_started = pyqtSignal(FileTranscriptionTask)
     task_progress = pyqtSignal(FileTranscriptionTask, float)
+    task_log = pyqtSignal(FileTranscriptionTask, str)
     task_download_progress = pyqtSignal(FileTranscriptionTask, float)
     task_completed = pyqtSignal(FileTranscriptionTask, list)
     task_error = pyqtSignal(FileTranscriptionTask, str)
@@ -198,6 +199,7 @@ class FileTranscriberQueueWorker(QObject):
         )
 
         self.current_transcriber.progress.connect(self.on_task_progress)
+        self.current_transcriber.log.connect(self.on_task_log)
         self.current_transcriber.download_progress.connect(
             self.on_task_download_progress
         )
@@ -259,6 +261,10 @@ class FileTranscriberQueueWorker(QObject):
     def on_task_progress(self, progress: Tuple[int, int]):
         if self.current_task is not None:
             self.task_progress.emit(self.current_task, progress[0] / progress[1])
+
+    def on_task_log(self, log: str):
+        if self.current_task is not None:
+            self.task_log.emit(self.current_task, log)
 
     def on_task_download_progress(self, fraction_downloaded: float):
         if self.current_task is not None:

@@ -4,6 +4,7 @@ import sys
 import logging
 import subprocess
 import json
+import shlex
 from typing import List
 from buzz.assets import APP_BASE_DIR
 from buzz.transcriber.transcriber import Segment, Task, FileTranscriptionTask
@@ -117,7 +118,11 @@ class WhisperCpp:
         # Add translate flag if needed
         if task.transcription_options.task == Task.TRANSLATE:
             cmd.extend(["--translate"])
-    
+
+        # Add advanced options
+        if task.transcription_options.advanced_options:
+            cmd.extend(shlex.split(task.transcription_options.advanced_options))
+
         # Force CPU if specified
         force_cpu = os.getenv("BUZZ_FORCE_CPU", "false")
         if force_cpu != "false" or (not IS_VULKAN_SUPPORTED and platform.system() != "Darwin"):
