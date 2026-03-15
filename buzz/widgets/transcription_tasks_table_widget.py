@@ -20,6 +20,8 @@ from PyQt6.QtWidgets import (
     QTableView,
     QAbstractItemView,
     QStyledItemDelegate,
+    QStyle,
+    QStyleOptionProgressBar,
 )
 
 from buzz.db.entity.transcription import Transcription
@@ -65,12 +67,41 @@ class ColDef:
     hidden_toggleable: bool = True
 
 
+class TranscriptionProgressBarDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        model: QSqlTableModel = index.model()
+        record = model.record(index.row())
+        status = FileTranscriptionTask.Status(record.value("status"))
+
+        if status == FileTranscriptionTask.Status.IN_PROGRESS:
+            progress = record.value("progress")
+            progress_bar_option = QStyleOptionProgressBar()
+            progress_bar_option.rect = option.rect.adjusted(4, 4, -4, -4)
+            progress_bar_option.minimum = 0
+            progress_bar_option.maximum = 100
+            progress_bar_option.progress = int(progress * 100)
+            progress_bar_option.text = f"{progress_bar_option.progress}%"
+            progress_bar_option.textVisible = True
+            progress_bar_option.state = QStyle.StateFlag.State_Enabled
+
+            QApplication.style().drawControl(
+                QStyle.ControlElement.CE_ProgressBar, progress_bar_option, painter
+            )
+        else:
+            super().paint(painter, option, index)
+
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        model: QSqlTableModel = index.model()
+        record = model.record(index.row())
+        option.text = format_record_status_text(record)
+
+
 def format_record_status_text(record: QSqlRecord) -> str:
     status = FileTranscriptionTask.Status(record.value("status"))
     match status:
         case FileTranscriptionTask.Status.IN_PROGRESS:
-            in_progress_label = _("In Progress")
-            return f'{in_progress_label} ({record.value("progress") :.0%})'
+            return "" # Delegate handles drawing progress bar
         case FileTranscriptionTask.Status.COMPLETED:
             status = _("Completed")
             started_at = record.value("time_started")
@@ -125,7 +156,7 @@ column_definitions = [
         header=_("Status"),
         column=Column.STATUS,
         width=180,
-        delegate=RecordDelegate(text_getter=format_record_status_text),
+        delegate=TranscriptionProgressBarDelegate(),
         hidden_toggleable=True,
     ),
 

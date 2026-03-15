@@ -14,7 +14,7 @@ from buzz.widgets.icon import (
     RECORD_ICON_PATH,
     ADD_ICON_PATH,
     URL_ICON_PATH,
-    EXPAND_ICON_PATH,
+    DESCRIPTION_ICON_PATH,
     CANCEL_ICON_PATH,
     TRASH_ICON_PATH,
     UPDATE_ICON_PATH,
@@ -58,7 +58,7 @@ class MainWindowToolbar(ToolBar):
         )
 
         self.open_transcript_action = Action(
-            Icon(EXPAND_ICON_PATH, self), _("Open Transcript"), self
+            Icon(DESCRIPTION_ICON_PATH, self), _("Open Transcript"), self
         )
         self.open_transcript_action_triggered = self.open_transcript_action.triggered
         self.open_transcript_action.setDisabled(True)

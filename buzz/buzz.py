@@ -16,6 +16,10 @@ from platformdirs import user_log_dir, user_cache_dir, user_data_dir
 # Will download all Huggingface data to the app cache directory
 os.environ.setdefault("HF_HOME", user_cache_dir("Buzz"))
 
+# Force FFmpeg backend for PyQt6 Multimedia to ensure pitch preservation
+# during speed changes (avoiding the "chipmunk effect")
+os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"
+
 from buzz.assets import APP_BASE_DIR
 
 # Check for segfaults if not running in frozen mode
