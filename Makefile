@@ -1,5 +1,5 @@
 # Change also in pyproject.toml and buzz/__version__.py
-version := 1.4.5
+version := 26.03.17.957
 
 mac_app_path := ./dist/Buzz.app
 mac_zip_path := ./dist/Buzz-${version}-mac.zip
@@ -40,7 +40,7 @@ test: buzz/whisper_cpp
 ifndef CI
 	uv lock --upgrade-package yt-dlp
 endif
-	pytest -s -vv --cov=buzz --cov-report=xml --cov-report=html --benchmark-skip --cov-fail-under=${COVERAGE_THRESHOLD} --cov-config=.coveragerc
+	pytest --cov=buzz --cov-report=xml --cov-report=html --benchmark-skip --cov-fail-under=${COVERAGE_THRESHOLD} --cov-config=.coveragerc
 
 benchmarks: buzz/whisper_cpp
 	pytest -s -vv --benchmark-only --benchmark-json benchmarks.json
@@ -59,7 +59,7 @@ ifeq ($(OS), Windows_NT)
 	# -DCMAKE_[C|CXX]_COMPILER_WORKS=TRUE is used to prevent issue in building test program that fails on CI
 	# GGML_NATIVE=OFF ensures we don't use -march=native (which would target the build machine's CPU)
 	cmake -S whisper.cpp -B whisper.cpp/build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_RPATH='$$ORIGIN' -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DCMAKE_C_FLAGS="-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR"  -DCMAKE_CXX_FLAGS="-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR" -DCMAKE_C_COMPILER_WORKS=TRUE -DCMAKE_CXX_COMPILER_WORKS=TRUE -DGGML_VULKAN=1 -DGGML_NATIVE=OFF
-	cmake --build whisper.cpp/build -j --config Release --verbose
+	cmake --build whisper.cpp/build -j --config Release
 
 	-mkdir buzz/whisper_cpp
 	cp whisper.cpp/build/bin/Release/whisper-cli.exe buzz/whisper_cpp/
@@ -75,14 +75,10 @@ ifeq ($(shell uname -s), Linux)
 	rm -rf whisper.cpp/build || true
 	-mkdir -p buzz/whisper_cpp
 	cmake -S whisper.cpp -B whisper.cpp/build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_RPATH='$$ORIGIN' -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DGGML_VULKAN=1 -DGGML_NATIVE=OFF
-	cmake --build whisper.cpp/build -j --config Release --verbose
+	cmake --build whisper.cpp/build -j --config Release
 	cp whisper.cpp/build/bin/whisper-cli buzz/whisper_cpp/ || true
 	cp whisper.cpp/build/bin/whisper-server buzz/whisper_cpp/ || true
-	cp -P whisper.cpp/build/src/libwhisper.so* buzz/whisper_cpp/ || true
-	cp -P whisper.cpp/build/ggml/src/libggml.so* buzz/whisper_cpp/ || true
-	cp -P whisper.cpp/build/ggml/src/libggml-base.so* buzz/whisper_cpp/ || true
-	cp -P whisper.cpp/build/ggml/src/libggml-cpu.so* buzz/whisper_cpp/ || true
-	cp -P whisper.cpp/build/ggml/src/ggml-vulkan/libggml-vulkan.so* buzz/whisper_cpp/ || true
+	find whisper.cpp/build -name "*.so*" -exec cp -P {} buzz/whisper_cpp/ \;
 	test -f buzz/whisper_cpp/ggml-silero-v6.2.0.bin || curl -L -o buzz/whisper_cpp/ggml-silero-v6.2.0.bin https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin
 endif
 
@@ -98,11 +94,10 @@ else
 	cmake -S whisper.cpp -B whisper.cpp/build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGGML_VULKAN=0 -DGGML_METAL=0
 endif
 
-	cmake --build whisper.cpp/build -j --config Release --verbose
+	cmake --build whisper.cpp/build -j --config Release
 	cp whisper.cpp/build/bin/whisper-cli buzz/whisper_cpp/ || true
 	cp whisper.cpp/build/bin/whisper-server buzz/whisper_cpp/ || true
-	cp whisper.cpp/build/src/libwhisper.dylib buzz/whisper_cpp/ || true
-	cp whisper.cpp/build/ggml/src/libggml* buzz/whisper_cpp/ || true
+	find whisper.cpp/build -name "*.dylib" -exec cp -P {} buzz/whisper_cpp/ \;
 	test -f buzz/whisper_cpp/ggml-silero-v6.2.0.bin || curl -L -o buzz/whisper_cpp/ggml-silero-v6.2.0.bin https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin
 endif
 

@@ -123,6 +123,7 @@ jobs:
     env:
       BUZZ_DISABLE_TELEMETRY: true
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
     strategy:
       fail-fast: false
       matrix:
@@ -237,52 +238,76 @@ jobs:
         shell: pwsh
 
       - name: Bundle
+        if: runner.os == 'Windows'
         run: |
-          if [ "$RUNNER_OS" == "macOS" ]; then
+          cp -r ./dll_backup ./buzz/
+          uv run make bundle_windows
+        shell: bash
 
-            brew install create-dmg
+      - name: Install create-dmg
+        if: runner.os == 'macOS'
+        run: brew install create-dmg
 
-            if [ -z "$BUILD_CERTIFICATE_BASE64" ]; then
-              echo "No signing certificate found, building unsigned DMG..."
-              uv run make bundle_mac_unsigned
-            else
-              sudo pkill -9 XProtect >/dev/null || true;
-              while pgrep XProtect; do sleep 3; done;
+      - name: Prepare Keychain
+        if: runner.os == 'macOS' && env.BUILD_CERTIFICATE_BASE64 != ''
+        run: |
+          sudo pkill -9 XProtect >/dev/null || true;
+          while pgrep XProtect; do sleep 3; done;
 
-              CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-              KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-              echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
 
-              security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-              security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-              security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-              security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-              security list-keychain -d user -s $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
 
-              xcrun notarytool store-credentials --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" notarytool --validate
-
-              uv run make bundle_mac
-            fi
-
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-
-            cp -r ./dll_backup ./buzz/
-            uv run make bundle_windows
-
-          fi
+          xcrun notarytool store-credentials --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" notarytool --validate
         env:
-          BUZZ_CODESIGN_IDENTITY: ${{ secrets.BUZZ_CODESIGN_IDENTITY }}
-          BUZZ_KEYCHAIN_NOTARY_PROFILE: ${{ secrets.BUZZ_KEYCHAIN_NOTARY_PROFILE }}
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+
+      - name: Build App
+        if: runner.os == 'macOS'
+        run: uv run make dist/Buzz.app
+        env:
           CMAKE_C_COMPILER_LAUNCHER: ccache
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        shell: bash
+
+      - name: Codesign Components
+        if: runner.os == 'macOS' && env.BUILD_CERTIFICATE_BASE64 != ''
+        run: uv run make codesign_all_mac
+        env:
+          BUZZ_CODESIGN_IDENTITY: ${{ secrets.BUZZ_CODESIGN_IDENTITY }}
+        shell: bash
+
+      - name: Zip & Notarize
+        if: runner.os == 'macOS' && env.BUILD_CERTIFICATE_BASE64 != ''
+        run: uv run make zip_mac notarize_zip
+        env:
+          BUZZ_KEYCHAIN_NOTARY_PROFILE: ${{ secrets.BUZZ_KEYCHAIN_NOTARY_PROFILE }}
+        shell: bash
+
+      - name: Staple & DMG
+        if: runner.os == 'macOS' && env.BUILD_CERTIFICATE_BASE64 != ''
+        run: uv run make staple_app_mac dmg_mac
+        env:
+          BUZZ_CODESIGN_IDENTITY: ${{ secrets.BUZZ_CODESIGN_IDENTITY }}
+          BUZZ_KEYCHAIN_NOTARY_PROFILE: ${{ secrets.BUZZ_KEYCHAIN_NOTARY_PROFILE }}
+        shell: bash
+
+      - name: Bundle Unsigned
+        if: runner.os == 'macOS' && env.BUILD_CERTIFICATE_BASE64 == ''
+        run: uv run make bundle_mac_unsigned
         shell: bash
 
       - uses: actions/upload-artifact@v4
